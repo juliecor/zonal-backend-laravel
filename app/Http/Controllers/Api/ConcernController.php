@@ -42,6 +42,9 @@ class ConcernController extends Controller
             ->paginate(10);
         $items->getCollection()->transform(function ($c) {
             $c->attachment_url = $c->attachment_path ? asset('storage/'.$c->attachment_path) : null;
+            $c->resolution_url = $c->resolution_path ? asset('storage/'.$c->resolution_path) : null;
+            // include note for client visibility
+            $c->resolution_note = $c->resolution_note ?? null;
             return $c;
         });
         return response()->json($items);

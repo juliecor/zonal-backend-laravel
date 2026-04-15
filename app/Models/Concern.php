@@ -10,7 +10,7 @@ class Concern extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'category', 'subject', 'message', 'status', 'attachment_path',
+        'user_id', 'category', 'subject', 'message', 'status', 'attachment_path', 'resolution_path', 'resolution_note',
     ];
 
     public function user()
