@@ -7,6 +7,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\UserAdminController;
 use App\Http\Controllers\Api\TokenRequestController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\ConcernController;
+use App\Http\Controllers\Api\Admin\ConcernAdminController;
 
 // Auth endpoints
 Route::post('/register', [AuthController::class, 'register']);
@@ -16,6 +19,16 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
 	Route::get('/me', [AuthController::class, 'me']);
 	Route::post('/logout', [AuthController::class, 'logout']);
+
+	// Profile (client & admin)
+	Route::get('/profile', [ProfileController::class, 'show']);
+	Route::put('/profile', [ProfileController::class, 'update']);
+	Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar']);
+	Route::delete('/profile/avatar', [ProfileController::class, 'deleteAvatar']);
+
+	// Concerns (client)
+	Route::post('/concerns', [ConcernController::class, 'create']);
+	Route::get('/concerns/mine', [ConcernController::class, 'mine']);
 
 	Route::get('/zonal-values', [ZonalValueController::class, 'index']);
 
@@ -32,6 +45,10 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/token-requests/{tokenRequest}/approve', [TokenRequestController::class, 'approve']);
 		Route::post('/token-requests/{tokenRequest}/deny', [TokenRequestController::class, 'deny']);
 		Route::get('/reports', [ReportController::class, 'adminIndex']);
+
+		// Concerns (admin)
+		Route::get('/concerns', [ConcernAdminController::class, 'index']);
+		Route::post('/concerns/{concern}/resolve', [ConcernAdminController::class, 'resolve']);
 	});
 
 	// Client token-requests
