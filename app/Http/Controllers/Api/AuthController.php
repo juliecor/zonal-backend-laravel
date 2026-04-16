@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
@@ -64,7 +65,13 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        return response()->json($request->user());
+        $user = $request->user();
+        if ($user && $user->avatar_path) {
+            $user->avatar_url = Storage::disk('s3')->url($user->avatar_path);
+        } else {
+            $user->avatar_url = null;
+        }
+        return response()->json($user, 200, [], JSON_UNESCAPED_SLASHES);
     }
 
     public function logout(Request $request)

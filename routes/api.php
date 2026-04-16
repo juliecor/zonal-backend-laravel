@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ConcernController;
 use App\Http\Controllers\Api\Admin\ConcernAdminController;
+use App\Http\Controllers\Api\UploadController;
 
 // Auth endpoints
 Route::post('/register', [AuthController::class, 'register']);
@@ -58,4 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
 	// Report logs (client)
 	Route::post('/reports', [ReportController::class, 'create']);
 	Route::get('/reports/mine', [ReportController::class, 'mine']);
+
+	// Generic uploads
+	Route::post('/upload', [UploadController::class, 'upload']);
 });

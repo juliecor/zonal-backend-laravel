@@ -10,7 +10,13 @@ class ProfileController extends Controller
 {
     public function show(Request $request)
     {
-        return response()->json($request->user());
+        $user = $request->user();
+        if ($user && $user->avatar_path) {
+            $user->avatar_url = Storage::disk('s3')->url($user->avatar_path);
+        } else {
+            $user->avatar_url = null;
+        }
+        return response()->json($user, 200, [], JSON_UNESCAPED_SLASHES);
     }
 
     public function update(Request $request)
@@ -48,27 +54,36 @@ class ProfileController extends Controller
 
         $file = $request->file('avatar');
 
-        $path = $file->store('avatars', 'public');
+        $avatarPrefix = env('AVATAR_PREFIX', 'avatars');
+        $path = $file->store($avatarPrefix, 's3');
 
-        // delete old if present
-        if ($user->avatar_path && Storage::disk('public')->exists($user->avatar_path)) {
-            Storage::disk('public')->delete($user->avatar_path);
+        // delete old if present (handle legacy local or new S3 paths)
+        if ($user->avatar_path) {
+            if (Storage::disk('s3')->exists($user->avatar_path)) {
+                Storage::disk('s3')->delete($user->avatar_path);
+            } elseif (Storage::disk('public')->exists($user->avatar_path)) {
+                Storage::disk('public')->delete($user->avatar_path);
+            }
         }
 
         $user->avatar_path = $path;
         $user->save();
 
         return response()->json([
-            'avatar_url' => asset('storage/'.$path),
+            'avatar_url' => Storage::disk('s3')->url($path),
             'user' => $user,
-        ]);
+        ], 200, [], JSON_UNESCAPED_SLASHES);
     }
 
     public function deleteAvatar(Request $request)
     {
         $user = $request->user();
-        if ($user->avatar_path && Storage::disk('public')->exists($user->avatar_path)) {
-            Storage::disk('public')->delete($user->avatar_path);
+        if ($user->avatar_path) {
+            if (Storage::disk('s3')->exists($user->avatar_path)) {
+                Storage::disk('s3')->delete($user->avatar_path);
+            } elseif (Storage::disk('public')->exists($user->avatar_path)) {
+                Storage::disk('public')->delete($user->avatar_path);
+            }
         }
         $user->avatar_path = null;
         $user->save();

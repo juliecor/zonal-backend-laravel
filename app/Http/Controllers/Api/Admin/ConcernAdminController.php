@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Concern;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ConcernAdminController extends Controller
 {
@@ -15,11 +16,11 @@ class ConcernAdminController extends Controller
         if ($status) $q->where('status', $status);
         $items = $q->paginate(20);
         $items->getCollection()->transform(function ($c) {
-            $c->attachment_url = $c->attachment_path ? asset('storage/'.$c->attachment_path) : null;
-            $c->resolution_url = $c->resolution_path ? asset('storage/'.$c->resolution_path) : null;
+            $c->attachment_url = $c->attachment_path ? Storage::disk('s3')->url($c->attachment_path) : null;
+            $c->resolution_url = $c->resolution_path ? Storage::disk('s3')->url($c->resolution_path) : null;
             return $c;
         });
-        return response()->json($items);
+        return response()->json($items, 200, [], JSON_UNESCAPED_SLASHES);
     }
 
     public function resolve(Request $request, Concern $concern)
@@ -30,7 +31,8 @@ class ConcernAdminController extends Controller
         ]);
 
         if ($request->hasFile('resolution')) {
-            $path = $request->file('resolution')->store('concerns/resolutions', 'public');
+            $resPrefix = env('CONCERN_RES_PREFIX', 'concerns/resolutions');
+            $path = $request->file('resolution')->store($resPrefix, 's3');
             $concern->resolution_path = $path;
         }
         if (!empty($data['note'])) {
@@ -38,7 +40,7 @@ class ConcernAdminController extends Controller
         }
         $concern->status = 'resolved';
         $concern->save();
-        $concern->resolution_url = $concern->resolution_path ? asset('storage/'.$concern->resolution_path) : null;
-        return response()->json(['ok' => true, 'concern' => $concern]);
+        $concern->resolution_url = $concern->resolution_path ? Storage::disk('s3')->url($concern->resolution_path) : null;
+        return response()->json(['ok' => true, 'concern' => $concern], 200, [], JSON_UNESCAPED_SLASHES);
     }
 }

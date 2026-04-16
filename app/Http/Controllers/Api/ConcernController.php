@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Concern;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ConcernController extends Controller
 {
@@ -19,7 +20,8 @@ class ConcernController extends Controller
 
         $attachmentPath = null;
         if ($request->hasFile('attachment')) {
-            $attachmentPath = $request->file('attachment')->store('concerns', 'public');
+            $concernPrefix = env('CONCERN_PREFIX', 'concerns');
+            $attachmentPath = $request->file('attachment')->store($concernPrefix, 's3');
         }
 
         $c = Concern::create([
@@ -31,8 +33,8 @@ class ConcernController extends Controller
             'attachment_path' => $attachmentPath,
         ]);
 
-        $c->attachment_url = $c->attachment_path ? asset('storage/'.$c->attachment_path) : null;
-        return response()->json($c, 201);
+        $c->attachment_url = $c->attachment_path ? Storage::disk('s3')->url($c->attachment_path) : null;
+        return response()->json($c, 201, [], JSON_UNESCAPED_SLASHES);
     }
 
     public function mine(Request $request)
@@ -41,12 +43,12 @@ class ConcernController extends Controller
             ->orderByDesc('created_at')
             ->paginate(10);
         $items->getCollection()->transform(function ($c) {
-            $c->attachment_url = $c->attachment_path ? asset('storage/'.$c->attachment_path) : null;
-            $c->resolution_url = $c->resolution_path ? asset('storage/'.$c->resolution_path) : null;
+            $c->attachment_url = $c->attachment_path ? Storage::disk('s3')->url($c->attachment_path) : null;
+            $c->resolution_url = $c->resolution_path ? Storage::disk('s3')->url($c->resolution_path) : null;
             // include note for client visibility
             $c->resolution_note = $c->resolution_note ?? null;
             return $c;
         });
-        return response()->json($items);
+        return response()->json($items, 200, [], JSON_UNESCAPED_SLASHES);
     }
 }
