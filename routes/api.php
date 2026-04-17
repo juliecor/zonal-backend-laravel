@@ -50,6 +50,9 @@ Route::middleware('auth:sanctum')->group(function () {
 		// Concerns (admin)
 		Route::get('/concerns', [ConcernAdminController::class, 'index']);
 		Route::post('/concerns/{concern}/resolve', [ConcernAdminController::class, 'resolve']);
+
+		// Invitations (admin)
+		Route::post('/invitations', [\App\Http\Controllers\Api\Admin\InvitationAdminController::class, 'invite']);
 	});
 
 	// Client token-requests

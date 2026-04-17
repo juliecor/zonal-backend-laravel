@@ -21,6 +21,21 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
+## Admin: Send Invitations
+
+POST `/api/admin/invitations` (auth:sanctum + `admin` middleware)
+
+JSON body:
+
+```json
+{ "emails": ["user1@example.com", "user2@example.com"], "redirect_url": "http://localhost:3000" }
+```
+
+- `emails`: one or more email addresses. Alternatively, send a single `email` string.
+- `redirect_url` (optional): frontend base; invite links will point to `<redirect_url>/register?email=...`.
+
+The mailer uses `.env` SMTP settings (e.g. `MAIL_HOST`, `MAIL_USERNAME`, etc.). Optionally, set `MAIL_CC` (comma-separated) to copy your team.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
