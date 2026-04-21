@@ -7,6 +7,11 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Hash as FacadesHash;
+use App\Models\EmailOtp;
+use App\Mail\OtpCodeMail;
+use Illuminate\Support\Facades\Mail;
+use Carbon\Carbon;
 use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
@@ -34,11 +39,24 @@ class AuthController extends Controller
             'token_balance' => 20, // initial free tokens
         ]);
 
-        $token = $user->createToken('web')->plainTextToken;
+        // Create OTP and send mail
+        EmailOtp::where('user_id',$user->id)->delete();
+        $code = str_pad(strval(random_int(0, 999999)), 6, '0', STR_PAD_LEFT);
+        EmailOtp::create([
+            'user_id' => $user->id,
+            'sent_to' => $user->email,
+            'code_hash' => Hash::make($code),
+            'attempts' => 0,
+            'last_sent_at' => Carbon::now(),
+            'expires_at' => Carbon::now()->addMinutes(10),
+        ]);
+        try { Mail::to($user->email)->send(new OtpCodeMail($code, env('APP_NAME','Zonal Value'))); } catch (\Throwable $e) {}
 
         return response()->json([
-            'user' => $user,
-            'token' => $token,
+            'pending_verification' => true,
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'resend_cooldown' => 30,
         ], 201);
     }
 

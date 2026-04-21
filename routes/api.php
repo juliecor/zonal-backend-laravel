@@ -11,10 +11,15 @@ use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ConcernController;
 use App\Http\Controllers\Api\Admin\ConcernAdminController;
 use App\Http\Controllers\Api\UploadController;
+use App\Http\Controllers\Api\OtpController;
 
 // Auth endpoints
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/otp/verify', [OtpController::class, 'verify']);
+Route::post('/otp/resend', [OtpController::class, 'resend']);
+Route::post('/login/otp/request', [OtpController::class, 'requestLogin']);
+Route::post('/login/otp/verify', [OtpController::class, 'verifyLogin']);
 
 // Protected routes (require Bearer token via Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
