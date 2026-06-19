@@ -12,6 +12,15 @@ use App\Http\Controllers\Api\ConcernController;
 use App\Http\Controllers\Api\Admin\ConcernAdminController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\OtpController;
+use App\Http\Controllers\Api\GeocodeCacheController;
+
+// Geocode cache (public, no token deduction) — saves Google geocoding cost.
+Route::get('/geocode-cache', [GeocodeCacheController::class, 'show']);
+Route::post('/geocode-cache', [GeocodeCacheController::class, 'store']);
+// Nearest cached zonal value to a coordinate ("scan a place → get its value").
+Route::get('/geocode-nearest', [GeocodeCacheController::class, 'nearest']);
+// Cached zonal points inside the visible map box (viewport loading).
+Route::get('/geocode-in-bounds', [GeocodeCacheController::class, 'inBounds']);
 
 // Auth endpoints
 Route::post('/register', [AuthController::class, 'register']);
