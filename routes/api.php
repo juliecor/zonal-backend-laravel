@@ -13,14 +13,27 @@ use App\Http\Controllers\Api\Admin\ConcernAdminController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\OtpController;
 use App\Http\Controllers\Api\GeocodeCacheController;
+use App\Http\Controllers\Api\FacetCacheController;
 
 // Geocode cache (public, no token deduction) — saves Google geocoding cost.
 Route::get('/geocode-cache', [GeocodeCacheController::class, 'show']);
 Route::post('/geocode-cache', [GeocodeCacheController::class, 'store']);
+
+// Facet (dropdown list) cache (public) — durable cache of city/barangay lists so
+// the slow first SpreadSimple fetch happens once globally, not per cold instance.
+Route::get('/facet-cache', [FacetCacheController::class, 'show']);
+Route::post('/facet-cache', [FacetCacheController::class, 'store']);
 // Nearest cached zonal value to a coordinate ("scan a place → get its value").
 Route::get('/geocode-nearest', [GeocodeCacheController::class, 'nearest']);
 // Cached zonal points inside the visible map box (viewport loading).
 Route::get('/geocode-in-bounds', [GeocodeCacheController::class, 'inBounds']);
+
+// Facet name-lists (public, no token) — city/barangay/classification NAMES only, not
+// values. Public so dropdowns + the AI assistant work without a login (the ₱ values
+// stay behind auth via /zonal-values). Fixes Laguna/Cabuyao not showing when logged out.
+Route::get('/facets/cities', [FacetController::class, 'cities']);
+Route::get('/facets/barangays', [FacetController::class, 'barangays']);
+Route::get('/facets/classifications', [FacetController::class, 'classifications']);
 
 // Auth endpoints
 Route::post('/register', [AuthController::class, 'register']);
@@ -47,11 +60,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
 	Route::get('/zonal-values', [ZonalValueController::class, 'index']);
 
-	// Facet endpoints
-	Route::get('/facets/cities', [FacetController::class, 'cities']);
-	Route::get('/facets/barangays', [FacetController::class, 'barangays']);
-	Route::get('/facets/classifications', [FacetController::class, 'classifications']);
-    
 	// Admin-only endpoints
 	Route::middleware('admin')->prefix('admin')->group(function () {
 		Route::get('/users', [UserAdminController::class, 'index']);
