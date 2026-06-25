@@ -34,6 +34,9 @@ Route::get('/geocode-in-bounds', [GeocodeCacheController::class, 'inBounds']);
 Route::get('/facets/cities', [FacetController::class, 'cities']);
 Route::get('/facets/barangays', [FacetController::class, 'barangays']);
 Route::get('/facets/classifications', [FacetController::class, 'classifications']);
+// Authoritative (province, city) index → lets the frontend route a clicked location to
+// the province our DB actually stores it under (fixes post-split LGUs like Malita).
+Route::get('/facets/city-province-index', [FacetController::class, 'cityProvinceIndex']);
 
 // Auth endpoints
 Route::post('/register', [AuthController::class, 'register']);

@@ -23,7 +23,7 @@ class FacetController extends Controller
         $cacheKey = "facets:cities:{$province}";
         $list = Cache::remember($cacheKey, self::CACHE_TTL, function () use ($province) {
             return ZonalValue::query()
-                ->where('province', 'LIKE', "%{$province}%")  // ✅ Remove TRIM - let DB use index
+                ->where('province', $province)  // exact match → uses idx_place; LIKE '%..%' forced a full scan of 823k rows
                 ->whereNotNull('city_municipality')
                 ->distinct('city_municipality')  // ✅ Use distinct() on column name (faster)
                 ->orderBy('city_municipality')
@@ -49,8 +49,8 @@ class FacetController extends Controller
         $cacheKey = "facets:barangays:{$province}:{$city}";
         $list = Cache::remember($cacheKey, self::CACHE_TTL, function () use ($province, $city) {
             return ZonalValue::query()
-                ->where('province', 'LIKE', "%{$province}%")
-                ->where('city_municipality', 'LIKE', "%{$city}%")
+                ->where('province', $province)
+                ->where('city_municipality', $city)  // exact match (was LIKE '%city%' which over-matched e.g. SAN JOSE → 5 cities)
                 ->whereNotNull('barangay')
                 ->distinct('barangay')
                 ->orderBy('barangay')
@@ -61,6 +61,31 @@ class FacetController extends Controller
         return response()
             ->json(['province' => $province, 'city' => $city, 'barangays' => array_values(array_filter($list))])
             ->header('Cache-Control', 'public, max-age=300, s-maxage=3600');
+    }
+
+    // Authoritative (province, city) pairs straight from the DB. Used by the frontend to
+    // route a clicked/searched LOCATION to the province our data ACTUALLY stores it under
+    // — instead of trusting Google's geocoder, which still returns OLD provinces for
+    // post-split LGUs (e.g. Malita is "Davao del Sur" on Google but "Davao Occidental"
+    // here). Tiny payload (~1.6k pairs), cached 24h.
+    public function cityProvinceIndex(Request $request)
+    {
+        $pairs = Cache::remember('facets:city_province_index', 86400, function () {
+            return ZonalValue::query()
+                ->whereNotNull('province')
+                ->whereNotNull('city_municipality')
+                ->select('province', 'city_municipality')
+                ->distinct()                 // (province, city_municipality) → loose-scans idx_place
+                ->orderBy('province')
+                ->orderBy('city_municipality')
+                ->get()
+                ->map(fn ($r) => [$r->province, $r->city_municipality])
+                ->all();
+        });
+
+        return response()
+            ->json(['pairs' => $pairs])
+            ->header('Cache-Control', 'public, max-age=600, s-maxage=86400');
     }
 
     public function classifications(Request $request)
@@ -75,13 +100,13 @@ class FacetController extends Controller
             $q = ZonalValue::query();
             
             if ($province) {
-                $q->where('province', 'LIKE', "%{$province}%");
+                $q->where('province', $province);
             }
             if ($city) {
-                $q->where('city_municipality', 'LIKE', "%{$city}%");
+                $q->where('city_municipality', $city);
             }
             if ($barangay) {
-                $q->where('barangay', 'LIKE', "%{$barangay}%");
+                $q->where('barangay', $barangay);
             }
 
             return $q->whereNotNull('classification_code')
