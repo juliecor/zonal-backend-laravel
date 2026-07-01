@@ -24,8 +24,13 @@ class ZonalValueController extends Controller
             return response()->json(['message' => 'province is required'], 400);
         }
 
+        // The mobile app's Zonal/Browse list sends "X-ZV-Free-List" — it's a plain DB read, so
+        // it does NOT cost a token. Map scans (which incur Google geocoding, via the website's
+        // scan-area) and the website itself never send this header, so they keep metering.
+        $freeList = $request->hasHeader('X-ZV-Free-List');
+
         // Admins have unlimited access (no deduction or checks)
-        if ($user->role !== 'admin') {
+        if (!$freeList && $user->role !== 'admin') {
             if ((int)($user->token_balance ?? 0) <= 0) {
                 return response()->json(['message' => 'Out of tokens'], 402);
             }
