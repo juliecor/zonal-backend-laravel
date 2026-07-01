@@ -56,6 +56,7 @@ Route::middleware('auth:sanctum')->group(function () {
 	Route::put('/profile', [ProfileController::class, 'update']);
 	Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar']);
 	Route::delete('/profile/avatar', [ProfileController::class, 'deleteAvatar']);
+		Route::delete('/account', [ProfileController::class, 'deleteAccount']);
 
 	// Concerns (client)
 	Route::post('/concerns', [ConcernController::class, 'create']);

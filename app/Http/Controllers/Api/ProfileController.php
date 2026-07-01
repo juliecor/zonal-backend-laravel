@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
@@ -88,5 +89,33 @@ class ProfileController extends Controller
         $user->avatar_path = null;
         $user->save();
         return response()->json(['ok' => true, 'user' => $user]);
+    }
+
+    /**
+     * Permanently delete the signed-in user's account and all associated personal data.
+     * Required by Google Play's account-deletion policy (in-app deletion for sign-up apps).
+     */
+    public function deleteAccount(Request $request)
+    {
+        $user = $request->user();
+
+        // Remove the profile photo from storage
+        if ($user->avatar_path) {
+            if (Storage::disk('s3')->exists($user->avatar_path)) {
+                Storage::disk('s3')->delete($user->avatar_path);
+            } elseif (Storage::disk('public')->exists($user->avatar_path)) {
+                Storage::disk('public')->delete($user->avatar_path);
+            }
+        }
+
+        // Revoke all access tokens, then remove associated records and the account itself.
+        $user->tokens()->delete();
+        DB::table('token_requests')->where('user_id', $user->id)->delete();
+        DB::table('reports')->where('user_id', $user->id)->delete();
+        DB::table('concerns')->where('user_id', $user->id)->delete();
+        DB::table('email_otps')->where('user_id', $user->id)->delete();
+        $user->delete();
+
+        return response()->json(['ok' => true]);
     }
 }
