@@ -45,6 +45,7 @@ Route::get('/app-status', [AppStatusController::class, 'show']);
 // Auth endpoints
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/auth/google', [AuthController::class, 'google']);
 Route::post('/otp/verify', [OtpController::class, 'verify']);
 Route::post('/otp/resend', [OtpController::class, 'resend']);
 Route::post('/login/otp/request', [OtpController::class, 'requestLogin']);
