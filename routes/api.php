@@ -80,6 +80,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 		// Invitations (admin)
 		Route::post('/invitations', [\App\Http\Controllers\Api\Admin\InvitationAdminController::class, 'invite']);
+			// Announcements / reminders — admin broadcast push to all users
+			Route::post('/announcements', [\App\Http\Controllers\Api\Admin\AnnouncementController::class, 'send']);
 	});
 
 	// Client token-requests
