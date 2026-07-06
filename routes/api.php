@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\Admin\ConcernAdminController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\OtpController;
 use App\Http\Controllers\Api\GeocodeCacheController;
+use App\Http\Controllers\Api\AppStatusController;
 use App\Http\Controllers\Api\FacetCacheController;
 
 // Geocode cache (public, no token deduction) — saves Google geocoding cost.
@@ -37,6 +38,9 @@ Route::get('/facets/classifications', [FacetController::class, 'classifications'
 // Authoritative (province, city) index → lets the frontend route a clicked location to
 // the province our DB actually stores it under (fixes post-split LGUs like Malita).
 Route::get('/facets/city-province-index', [FacetController::class, 'cityProvinceIndex']);
+
+// App status (public) — the mobile app checks this on launch for maintenance mode.
+Route::get('/app-status', [AppStatusController::class, 'show']);
 
 // Auth endpoints
 Route::post('/register', [AuthController::class, 'register']);
@@ -82,6 +86,9 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/invitations', [\App\Http\Controllers\Api\Admin\InvitationAdminController::class, 'invite']);
 			// Announcements / reminders — admin broadcast push to all users
 			Route::post('/announcements', [\App\Http\Controllers\Api\Admin\AnnouncementController::class, 'send']);
+
+			// Maintenance mode toggle (admin)
+			Route::post('/maintenance', [AppStatusController::class, 'setMaintenance']);
 	});
 
 	// Client token-requests
