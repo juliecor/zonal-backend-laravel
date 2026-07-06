@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\TokenRequest;
 use App\Models\User;
+use App\Support\ExpoPush;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 
 class TokenRequestController extends Controller
 {
@@ -58,20 +58,13 @@ class TokenRequestController extends Controller
             $tokenRequest->update(['status' => 'approved']);
         });
 
-        // Best-effort push notification to the user's device (via Expo).
-        $user = User::find($tokenRequest->user_id);
-        if ($user && !empty($user->expo_push_token)) {
-            try {
-                Http::acceptJson()->timeout(6)->post('https://exp.host/--/api/v2/push/send', [
-                    'to' => $user->expo_push_token,
-                    'title' => 'Search credits approved ✅',
-                    'body' => "Your request for {$tokenRequest->quantity} credits was approved — happy searching!",
-                    'sound' => 'default',
-                    'priority' => 'high',
-                    'data' => ['type' => 'credits_approved'],
-                ]);
-            } catch (\Throwable $e) { /* ignore push failures */ }
-        }
+        // Notify the user (best-effort push).
+        ExpoPush::toUser(
+            User::find($tokenRequest->user_id),
+            'Search credits approved ✅',
+            "Your request for {$tokenRequest->quantity} credits was approved — happy searching!",
+            ['type' => 'credits_approved'],
+        );
 
         return response()->json(['ok'=>true, 'request'=>$tokenRequest->fresh()]);
     }
@@ -83,6 +76,15 @@ class TokenRequestController extends Controller
             return response()->json(['message' => 'Already processed'], 409);
         }
         $tokenRequest->update(['status' => 'denied']);
+
+        // Notify the user (best-effort push).
+        ExpoPush::toUser(
+            User::find($tokenRequest->user_id),
+            'Credit request update',
+            "Your request for {$tokenRequest->quantity} credits wasn't approved this time. You can submit a new request anytime.",
+            ['type' => 'credits_denied'],
+        );
+
         return response()->json(['ok'=>true, 'request'=>$tokenRequest->fresh()]);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\ExpoPush;
 use Illuminate\Http\Request;
 
 class UserAdminController extends Controller
@@ -23,6 +24,15 @@ class UserAdminController extends Controller
             'add' => ['required','integer','min:1','max:100000'],
         ]);
         $user->increment('token_balance', $data['add']);
+
+        // Notify the user their balance was topped up (best-effort push).
+        ExpoPush::toUser(
+            $user->fresh(),
+            'Credits added ✅',
+            "You've received {$data['add']} search credits — happy searching!",
+            ['type' => 'credits_topup'],
+        );
+
         return response()->json(['ok'=>true, 'user'=>$user->fresh()]);
     }
 }
