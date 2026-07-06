@@ -91,6 +91,19 @@ class ProfileController extends Controller
         return response()->json(['ok' => true, 'user' => $user]);
     }
 
+    /** Save this device's Expo push token for the signed-in user (for notifications). */
+    public function savePushToken(Request $request)
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'token' => ['required', 'string', 'max:255'],
+            'platform' => ['nullable', 'string', 'max:20'],
+        ]);
+        $user->expo_push_token = $data['token'];
+        $user->save();
+        return response()->json(['ok' => true]);
+    }
+
     /**
      * Permanently delete the signed-in user's account and all associated personal data.
      * Required by Google Play's account-deletion policy (in-app deletion for sign-up apps).

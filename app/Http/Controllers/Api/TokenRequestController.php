@@ -7,6 +7,7 @@ use App\Models\TokenRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class TokenRequestController extends Controller
 {
@@ -56,6 +57,22 @@ class TokenRequestController extends Controller
             User::where('id', $tokenRequest->user_id)->increment('token_balance', $tokenRequest->quantity);
             $tokenRequest->update(['status' => 'approved']);
         });
+
+        // Best-effort push notification to the user's device (via Expo).
+        $user = User::find($tokenRequest->user_id);
+        if ($user && !empty($user->expo_push_token)) {
+            try {
+                Http::acceptJson()->timeout(6)->post('https://exp.host/--/api/v2/push/send', [
+                    'to' => $user->expo_push_token,
+                    'title' => 'Search credits approved ✅',
+                    'body' => "Your request for {$tokenRequest->quantity} credits was approved — happy searching!",
+                    'sound' => 'default',
+                    'priority' => 'high',
+                    'data' => ['type' => 'credits_approved'],
+                ]);
+            } catch (\Throwable $e) { /* ignore push failures */ }
+        }
+
         return response()->json(['ok'=>true, 'request'=>$tokenRequest->fresh()]);
     }
 
