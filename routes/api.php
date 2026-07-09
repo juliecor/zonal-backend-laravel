@@ -42,6 +42,11 @@ Route::get('/facets/city-province-index', [FacetController::class, 'cityProvince
 // App status (public) — the mobile app checks this on launch for maintenance mode.
 Route::get('/app-status', [AppStatusController::class, 'show']);
 
+// Public TEASER zonal stats for the website's SEO pages — aggregates + a few
+// samples only (full data stays behind auth on /zonal-values). Cached + throttled.
+Route::get('/public/zonal-stats', [\App\Http\Controllers\Api\PublicZonalStatsController::class, 'show'])
+	->middleware('throttle:60,1');
+
 // Auth endpoints
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
