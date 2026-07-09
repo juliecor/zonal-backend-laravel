@@ -43,9 +43,11 @@ Route::get('/facets/city-province-index', [FacetController::class, 'cityProvince
 Route::get('/app-status', [AppStatusController::class, 'show']);
 
 // Public TEASER zonal stats for the website's SEO pages — aggregates + a few
-// samples only (full data stays behind auth on /zonal-values). Cached + throttled.
+// samples only (full data stays behind auth on /zonal-values). Cached 12h, so
+// the limit mainly guards the first-time compute; 300/min lets the website's
+// build regenerate hundreds of city pages without tripping 429s.
 Route::get('/public/zonal-stats', [\App\Http\Controllers\Api\PublicZonalStatsController::class, 'show'])
-	->middleware('throttle:60,1');
+	->middleware('throttle:300,1');
 
 // Auth endpoints
 Route::post('/register', [AuthController::class, 'register']);
